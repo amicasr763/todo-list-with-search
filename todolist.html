@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List with Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            
+            
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin-left: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-container input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .search-info {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        ul {
+            list-style-type: none;
+        }
+        
+        li {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        li:hover {
+            background-color: #f9f9f9;
+        }
+        
+        li.completed {
+            text-decoration: line-through;
+            color: #95a5a6;
+            background-color: #f8f9fa;
+        }
+        
+        .todo-text {
+            flex: 1;
+            margin-right: 10px;
+        }
+        
+        #todoList{
+            margin-bottom:10px;
+        }
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .toggle-btn {
+            background-color: #2ecc71;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+        }
+        
+        .stats {
+            margin-top: 20px 0px;
+            padding: 15px 10px;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .highlight {
+            background-color: #fffacd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Todo List</h1>
+        
+        <div class="input-group">
+            <input type="text" id="todoInput" placeholder="Add a new task...">
+            <button id="addBtn">Add Task</button>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search tasks...">
+        </div>
+        <div class="stats">
+            <span id="totalCount">Total: 0</span>
+            <span id="completedCount">Completed: 0</span>
+            <span id="pendingCount">Pending: 0</span>
+        </div>
+   
+
+        <ul id="todoList"></ul>
+        
+    </div>
+    <script>
+        // DOM elements
+        const todoInput = document.getElementById('todoInput');
+        const addBtn = document.getElementById('addBtn');
+        const searchInput = document.getElementById('searchInput');
+        const todoList = document.getElementById('todoList');
+        const totalCount = document.getElementById('totalCount');
+        const completedCount = document.getElementById('completedCount');
+        const pendingCount = document.getElementById('pendingCount');
+
+        // Todo array to store our tasks
+        let todos = [];
+
+        // Initialize the app
+        function init() {
+            // Load todos from localStorage if available
+            const savedTodos = localStorage.getItem('todos');
+            if (savedTodos) {
+                todos = JSON.parse(savedTodos);
+            }
+            
+            // Render the todos
+            renderTodos();
+            
+            // Add event listeners
+            addBtn.addEventListener('click', addTodo);
+            todoInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTodo();
+                }
+            });
+            
+            // Add search with debounce
+            searchInput.addEventListener('input', debounce(searchTodos, 300));
+        }
+
+        // Add a new todo
+        function addTodo() {
+            const text = todoInput.value.trim();
+            
+            if (text === '') {
+                alert('Please enter a task!');
+                return;
+            }
+            
+            // Create new todo object
+            const newTodo = {
+                id: Date.now(), // Simple unique ID
+                text: text,
+                completed: false
+            };
+            
+            // Add to todos array
+            todos.push(newTodo);
+            
+            // Save to localStorage
+            saveTodos();
+            
+            // Clear input
+            todoInput.value = '';
+            
+            // Render updated list
+            renderTodos();
+        }
+
+        // Delete a todo
+        function deleteTodo(id) {
+            todos = todos.filter(todo => todo.id !== id);
+            saveTodos();
+            renderTodos();
+        }
+
+        // Toggle todo completion status
+        function toggleTodo(id) {
+            todos = todos.map(todo => {
+                if (todo.id === id) {
+                    return { ...todo, completed: !todo.completed };
+                }
+                return todo;
+            });
+            saveTodos();
+            renderTodos();
+        }
+
+        // Search todos
+        function searchTodos() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            renderTodos(searchTerm);
+        }
+
+        // Debounce function to limit how often search executes
+        function debounce(func, delay) {
+            let timeoutId;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        // Render todos to the DOM
+        function renderTodos(searchTerm = '') {
+            // Clear the list
+            todoList.innerHTML = '';
+            
+            // Filter todos based on search term
+            let filteredTodos = todos;
+            if (searchTerm) {
+                filteredTodos = todos.filter(todo => 
+                    todo.text.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Show empty state if no todos
+            if (filteredTodos.length === 0) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.textContent = searchTerm ? 
+                    'No tasks match your search.' : 
+                    'No tasks yet. Add one above!';
+                todoList.appendChild(emptyState);
+            } else {
+                // Create list items for each todo
+                filteredTodos.forEach(todo => {
+                    const li = document.createElement('li');
+                    if (todo.completed) {
+                        li.classList.add('completed');
+                    }
+                    
+                    // Create todo text
+                    const todoText = document.createElement('span');
+                    todoText.className = 'todo-text';
+                    todoText.textContent = todo.text;
+                    
+                    // Highlight search term if present
+                    if (searchTerm) {
+                        const regex = new RegExp(`(${searchTerm})`, 'gi');
+                        todoText.innerHTML = todo.text.replace(regex, '<span class="highlight">$1</span>');
+                    }
+                    
+                    // Create action buttons
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'todo-actions';
+                    
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'toggle-btn';
+                    toggleBtn.textContent = todo.completed ? 'Undo' : 'Complete';
+                    toggleBtn.addEventListener('click', () => toggleTodo(todo.id));
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+                    
+                    // Append elements
+                    actionsDiv.appendChild(toggleBtn);
+                    actionsDiv.appendChild(deleteBtn);
+                    
+                    li.appendChild(todoText);
+                    li.appendChild(actionsDiv);
+                    
+                    todoList.appendChild(li);
+                });
+            }
+            
+            // Update stats
+            updateStats();
+        }
+
+        // Update the statistics
+        function updateStats() {
+            const total = todos.length;
+            const completed = todos.filter(todo => todo.completed).length;
+            const pending = total - completed;
+            
+            totalCount.textContent = `Total: ${total}`;
+            completedCount.textContent = `Completed: ${completed}`;
+            pendingCount.textContent = `Pending: ${pending}`;
+        }
+
+        // Save todos to localStorage
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
