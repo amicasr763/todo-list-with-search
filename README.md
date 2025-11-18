@@ -2,8 +2,6 @@
 
 A clean, responsive todo list application built with vanilla JavaScript featuring real-time search with debounce functionality.
 
-![Todo List Preview](https://via.placeholder.com/800x400.png?text=Todo+List+with+Search+and+Debounce)
-
 ## Features
 
 - ✅ Add new todos with names
