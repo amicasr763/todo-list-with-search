@@ -40,4 +40,4 @@ A clean, responsive todo list application built with vanilla JavaScript featurin
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/todo-list-with-search.git
+git clone [https://github.com/your-username/todo-list-with-search.git](https://github.com/amicasr763/todo-list-with-search)
